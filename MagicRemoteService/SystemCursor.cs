@@ -11,6 +11,7 @@
 			WinApi.OemCursorRessourceId.OCR_NO,
 			WinApi.OemCursorRessourceId.OCR_APPSTARTING
 		};
+		private static readonly System.Collections.Generic.IDictionary<WinApi.OemCursorRessourceId, System.IntPtr> dSystemCursor = new System.Collections.Generic.Dictionary<WinApi.OemCursorRessourceId, System.IntPtr>();
 		private static readonly int iMagicRemoteServiceMouseSpeed = 10;
 		private static readonly System.IntPtr hMagicRemoteServiceMouseAccel = System.Runtime.InteropServices.GCHandle.Alloc(new int[3] { 0, 0, 0 }, System.Runtime.InteropServices.GCHandleType.Pinned).AddrOfPinnedObject();
 		private static readonly int iDefaultMouseSpeed = 0;
@@ -26,11 +27,19 @@
 		}
 		public static void SetMagicRemoteServiceSystemCursor() {
 			foreach(WinApi.OemCursorRessourceId ocri in MagicRemoteService.SystemCursor.arrCursor) {
+				if(!MagicRemoteService.SystemCursor.dSystemCursor.ContainsKey(ocri)) {
+					MagicRemoteService.SystemCursor.dSystemCursor.Add(ocri, WinApi.User32.CopyIcon(WinApi.User32.LoadCursor(System.IntPtr.Zero, ocri)));
+				}
 				WinApi.User32.SetSystemCursor(WinApi.User32.CopyIcon(MagicRemoteService.SystemCursor.hMagicRemoteServiceCursor), ocri);
 			}
 		}
 		public static void SetDefaultSystemCursor() {
-			WinApi.User32.SystemParametersInfo(WinApi.SystemParametersInfoAction.SPI_SETCURSORS, 0, System.IntPtr.Zero, 0);
+			foreach(WinApi.OemCursorRessourceId ocri in MagicRemoteService.SystemCursor.arrCursor) {
+				if(MagicRemoteService.SystemCursor.dSystemCursor.TryGetValue(ocri, out System.IntPtr hSystemCursor)) {
+					WinApi.User32.SetSystemCursor(hSystemCursor, ocri);
+					MagicRemoteService.SystemCursor.dSystemCursor.Remove(ocri);
+				}
+			}
 		}
 		public static void SetMagicRemoteServiceMouseSpeedAccel() {
 			WinApi.User32.SystemParametersInfo(WinApi.SystemParametersInfoAction.SPI_GETMOUSESPEED, 0, MagicRemoteService.SystemCursor.hDefaultMouseSpeed, 0);

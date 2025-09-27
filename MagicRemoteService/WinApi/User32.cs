@@ -668,6 +668,8 @@ namespace MagicRemoteService.WinApi {
 		[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
 		public static extern bool SetSystemCursor(System.IntPtr hcur, OemCursorRessourceId id);
 		[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+		public static extern System.IntPtr LoadCursor(System.IntPtr hInstance, OemCursorRessourceId lpCursorName);
+		[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
 		public static extern System.IntPtr LoadCursorFromFile(string lpFileName);
 		[System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
 		public static extern System.IntPtr CopyIcon(System.IntPtr pcur);
