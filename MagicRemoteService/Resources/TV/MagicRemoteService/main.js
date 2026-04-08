@@ -549,6 +549,7 @@ function SubscriptionGetSensorData() {
 		},
 		onFailure: function(inError) {
 			switch(inError.errorCode) {
+				case "1003":
 				case "1301":
 					LogIfDebug(oString.strGetSensorDataFailure + " [", inError.errorCode, ", ", inError.errorText, "]");
 					if(arrVersion[0] > 2) {
@@ -568,7 +569,7 @@ function SubscriptionGetSensorData() {
 									return true;
 								default:
 									return false;
-							}
+								}
 						});
 					}
 					break;
