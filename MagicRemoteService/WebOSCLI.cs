@@ -146,15 +146,57 @@ namespace MagicRemoteService {
 		}
 	}
 	internal static class WebOSCLI {
+		private static readonly string strPolyfillPath = System.IO.File.Exists(
+			System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Resources", "node-polyfill.js"))
+			? System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "Resources", "node-polyfill.js")
+			: null;
+		private static readonly System.Collections.Generic.Dictionary<string, string> dAresCommandCache = new System.Collections.Generic.Dictionary<string, string>();
+		private static string ResolveAresCommand(string strCommand) {
+			if(dAresCommandCache.TryGetValue(strCommand, out string strCached)) {
+				return strCached;
+			}
+			string strResult = null;
+			try {
+				using(System.Diagnostics.Process pWhich = new System.Diagnostics.Process()) {
+					pWhich.StartInfo.FileName = "cmd";
+					pWhich.StartInfo.Arguments = "/c where " + strCommand;
+					pWhich.StartInfo.UseShellExecute = false;
+					pWhich.StartInfo.CreateNoWindow = true;
+					pWhich.StartInfo.RedirectStandardOutput = true;
+					pWhich.Start();
+					string strOutput = pWhich.StandardOutput.ReadToEnd();
+					pWhich.WaitForExit();
+					foreach(string strLine in strOutput.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries)) {
+						if(strLine.EndsWith(".cmd", System.StringComparison.OrdinalIgnoreCase)) {
+							string strNpmDir = System.IO.Path.GetDirectoryName(strLine);
+							string strJsPath = System.IO.Path.Combine(strNpmDir, "node_modules", "@webos-tools", "cli", "bin", strCommand + ".js");
+							if(System.IO.File.Exists(strJsPath)) {
+								strResult = strJsPath;
+								break;
+							}
+						}
+					}
+				}
+			} catch(System.Exception) {
+			}
+			dAresCommandCache[strCommand] = strResult;
+			return strResult;
+		}
 		private static string ExecWebOSCLICommand(string strCommand, string strArgument, System.Collections.Generic.Dictionary<ushort, string> dInput = null, string strWorkingDirectory = null) {
 			System.Diagnostics.Process pProcess = new System.Diagnostics.Process();
 			pProcess.StartInfo.FileName = "cmd";
 			if(!string.IsNullOrEmpty(strWorkingDirectory)) {
 				pProcess.StartInfo.WorkingDirectory = strWorkingDirectory;
 			}
-			pProcess.StartInfo.Arguments = "/c " + strCommand + " " + strArgument;
 			pProcess.StartInfo.UseShellExecute = false;
 			pProcess.StartInfo.CreateNoWindow = true;
+			string strCommandPath = MagicRemoteService.WebOSCLI.ResolveAresCommand(strCommand);
+			if(strPolyfillPath != null && strCommandPath != null) {
+				pProcess.StartInfo.FileName = "node";
+				pProcess.StartInfo.Arguments = "--require \"" + strPolyfillPath + "\" \"" + strCommandPath + "\" " + strArgument;
+			} else {
+				pProcess.StartInfo.Arguments = "/c " + strCommand + " " + strArgument;
+			}
 			pProcess.StartInfo.RedirectStandardInput = true;
 			pProcess.StartInfo.RedirectStandardError = true;
 			pProcess.StartInfo.RedirectStandardOutput = true;
